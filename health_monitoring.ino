@@ -12,6 +12,8 @@ DallasTemperature sensors(&oneWire);
 #define OLED_Address 0x3C // 0x3C device address of I2C OLED. Few other OLED has 0x3D
 Adafruit_SSD1306 oled(128, 64); // create our screen object setting resolution to 128x64
 
+const int eme = 12;
+int emestate = 0;
 int a = 0;
 int lasta = 0;
 int lastb = 0;
@@ -27,8 +29,9 @@ void setup() {
   Serial.begin(9600);
   Serial.println("AIT _ health monitoring");
   delay(2000);
+  pinMode(eme, INPUT);
   sensors.begin();
-  
+
   oled.begin(SSD1306_SWITCHCAPVCC, OLED_Address);
   oled.clearDisplay();
   oled.setTextSize(2);
@@ -36,6 +39,15 @@ void setup() {
 
 void loop()
 {
+  if (emestate == HIGH) {
+    tone(14, 1000, 100);
+    delay(1000);
+    tone(14, 1000, 100);
+
+  } else {
+    tone(14, 2093, 100);
+  }
+
   sensors.requestTemperatures();
   int tempC = sensors.getTempCByIndex(0);
   // Check if reading was successful
@@ -78,7 +90,7 @@ void loop()
     {
       LastTime = millis();
       BPMTiming = true;
-      tone(14, 2093, 100);
+      //tone(14, 2093, 100);
     }
   }
   if ((value < LowerThreshold) & (BPMTiming))
@@ -90,7 +102,7 @@ void loop()
   oled.print("EMR:");
   oled.setCursor(0, 30);
   oled.print("TMP:");
-  oled.print((tempC%99));
+  oled.print((tempC % 99));
   oled.setCursor(0, 51);
   oled.print("BPM:");
   oled.print(BPM);
@@ -98,5 +110,3 @@ void loop()
   a++;
   a++;
 }
-
-// comment 
