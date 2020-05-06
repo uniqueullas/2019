@@ -1,19 +1,32 @@
     NODE MCU PINO OUT
     
-ADC0      - HEART BEAT SENSOR 
-GPIO 10   - 
-GPIO 09   - 
+ADC0      -A0- HEART BEAT SENSOR 
+GPIO 10   -SD3- 
+GPIO 09   -SD2- 
 
-GPIO 16   - 
-GPIO 05   - i2c <SDA>| OLED display
-GPIO 04   - i2c <SCL>| OLED display
+GPIO 16   -D0- 
+GPIO 05   -D1- i2c <SDA>| OLED display
+GPIO 04   -D2- i2c <SCL>| OLED display
 
-GPIO 00   - 
-GPIO 02   - Temprature sensor
+GPIO 00   -D3- 
+GPIO 02   -D4- Temprature sensor
 
-GPIO 14   - Water level sensor
-GPIO 12   - Emergency switch
-GPIO 13   - 
-GPIO 15   - 
-GPIO 03   - 
-GPIO 01   - 
+GPIO 14   -D5- BUZZER 
+GPIO 12   -D6- Emergency switch
+GPIO 13   -D7- //Water level sensor 
+GPIO 15   -D8- 
+GPIO 03   -RX-
+GPIO 01   -TX-
+
+GND 
+3.3V
+
+RESERVED
+RSV
+RSV
+SD1
+CMD
+SD0
+CLK
+EN
+RST
