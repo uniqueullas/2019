@@ -164,5 +164,5 @@ void displai(int BPM, int temp) {
   Serial.print("TMP:");
   Serial.print(temp);
   Serial.print("   BPM:");
-  Serial.print(BPM);
+  Serial.println(BPM);
 }
