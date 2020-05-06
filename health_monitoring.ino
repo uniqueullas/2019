@@ -1,4 +1,15 @@
-// the last working code 16/04/2020 on board
+/*The code is written for AIT college project, called HEALTH MONITORING SYSTEM
+   ECE dept Final year project
+   board used is NODE MCU version 2.3
+   micro contoller NodeMCU 1.0(ESP-12E MOdule)
+   Upload speed 115200
+   80 Mhz CPU frequency
+   auto bootloader 
+   code uploaded to https://github.com/uniqueullas/Node-MCU-2019/blob/master/health_monitoring.ino
+*/
+
+// the last working code 06/05/2020 on board
+
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -27,7 +38,7 @@ int BPM = 0;
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("AIT _ health monitoring");
+  Serial.println("AIT _ Health Monitoring Sysyem Logs");
   delay(2000);
   pinMode(eme, INPUT);
   sensors.begin();
@@ -35,61 +46,98 @@ void setup() {
   oled.begin(SSD1306_SWITCHCAPVCC, OLED_Address);
   oled.clearDisplay();
   oled.setTextSize(2);
+  Serial.println("Entering loop....!");
+  Serial.println("Function :emergency initialized");
+  Serial.println("Function :temparature initialized");
+  Serial.println("Function :ecg initialized");
+  Serial.println("Function :bpm initialized");
+  Serial.println("Function :displai initialized");
 }
 
-void loop()
-{
+void loop() {
+  Serial.println("*******Running on loop*******");
   emestate = digitalRead(eme);
-  while (emestate == LOW)
-  {
-    tone(14, 2093, 200);
-    delay(100);
-    tone(14, 1000, 200);
-    delay(100);
-    Serial.println("emg");
+  while (emestate == LOW) {
+    emergency();
     emestate = digitalRead(eme);
   }
+  int temp = temparature ();
+  int value = analogRead(0);
+  ecg(value);
+  int BPM = bpm(value);
+  displai(BPM, temp);
 
+}
+
+void emergency() {
+  Serial.println("Function calling-emergency");
+  Serial.println("...");
+  oled.clearDisplay();
+  tone(14, 2093, 200);
+  delay(100);
+  tone(14, 1000, 200);
+  delay(100);
+  Serial.println("emg");
+  oled.writeFillRect(0, 50, 128, 16, BLACK);
+  oled.setCursor(0, 1);
+  oled.print("EMERGENCY!");
+  oled.display();
+  int temp = temparature ();
+  int value = analogRead(0);
+  delay(50);
+  int BPM = bpm(value);
+  displai(BPM, temp);
+}
+
+int temparature () {
+  Serial.println("Function calling-temparature");
+  Serial.println("...");
   sensors.requestTemperatures();
   int tempC = sensors.getTempCByIndex(0);
   // Check if reading was successful
-  if (tempC != DEVICE_DISCONNECTED_C)
-  {
+  if (tempC != DEVICE_DISCONNECTED_C) {
     Serial.print("Temperature for the device 1 (index 0) is: ");
     Serial.println(tempC);
+    Serial.println("...");
   }
-  else
-  {
+  else {
     Serial.println("Error: Could not read temperature data");
   }
-  if (a > 60)
-  {
+  return tempC;
+}
+
+int ecg(int value) {
+  Serial.println("Function calling-ecg");
+  Serial.println("...");
+  if (a > 60) {
     oled.clearDisplay();
     a = 0;
     lasta = a;
   }
-
   ThisTime = millis();
-  int value = analogRead(0);
+
+  //
   oled.setTextColor(WHITE);
   //int b = 60 - (value / 16);
   int b = map(value, 0, 1023, 0, 20);
   oled.writeLine(lasta, lastb, a, b, WHITE);
+  oled.display();
   lastb = b;
   lasta = a;
+  a = a + 3;
+}
 
-  if (value > UpperThreshold)
-  {
-    if (BeatComplete)
-    {
+int bpm(int value) {
+  Serial.println("Function calling-bpm");
+  Serial.println("...");
+  if (value > UpperThreshold) {
+    if (BeatComplete) {
       BPM = ThisTime - LastTime;
       BPM = int(60 / (float(BPM) / 1000));
       BPMTiming = false;
       BeatComplete = false;
-
     }
-    if (BPMTiming == false)
-    {
+    if (BPMTiming == false) {
       LastTime = millis();
       BPMTiming = true;
       tone(14, 2093, 100);
@@ -97,18 +145,24 @@ void loop()
   }
   if ((value < LowerThreshold) & (BPMTiming))
     BeatComplete = true;
+  return BPM;
+}
 
-  //oled.clearDisplay(0,30);
+void displai(int BPM, int temp) {
+  Serial.println("Function calling-displai");
+  Serial.println("...");
   oled.writeFillRect(0, 50, 128, 16, BLACK);
-  oled.setCursor(62, 0);
-  oled.print("EMR:");
+  //oled.setCursor(62, 0);
+  //oled.print("EMR:");
   oled.setCursor(0, 30);
   oled.print("TMP:");
-  oled.print((tempC % 99));
+  oled.print((temp % 99));
   oled.setCursor(0, 51);
   oled.print("BPM:");
   oled.print(BPM);
   oled.display();
-  a++;
-  a++;
+  Serial.print("TMP:");
+  Serial.print(temp);
+  Serial.print("   BPM:");
+  Serial.print(BPM);
 }
