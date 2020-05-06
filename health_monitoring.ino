@@ -39,13 +39,15 @@ void setup() {
 
 void loop()
 {
-  if (emestate == HIGH) {
-    tone(14, 1000, 100);
-    delay(1000);
-    tone(14, 1000, 100);
-
-  } else {
-    tone(14, 2093, 100);
+  emestate = digitalRead(eme);
+  while (emestate == LOW)
+  {
+    tone(14, 2093, 200);
+    delay(100);
+    tone(14, 1000, 200);
+    delay(100);
+    Serial.println("emg");
+    emestate = digitalRead(eme);
   }
 
   sensors.requestTemperatures();
@@ -90,7 +92,7 @@ void loop()
     {
       LastTime = millis();
       BPMTiming = true;
-      //tone(14, 2093, 100);
+      tone(14, 2093, 100);
     }
   }
   if ((value < LowerThreshold) & (BPMTiming))
