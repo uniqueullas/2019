@@ -5,11 +5,18 @@
    Upload speed 115200
    80 Mhz CPU frequency
    auto bootloader
-   code uploaded to https://github.com/uniqueullas/Node-MCU-2019/blob/master/health_monitoring.ino
+   code uploaded to https://github.com/uniqueullas/Node-MCU-2019/blob/master/health_monitoring.ino+
+   code local path C:\Users\DELL\Documents\Arduino\health_moitoring_with_function
+       ___  __          __
+   / _ )/ /_ _____  / /__
+  / _  / / // / _ \/  '_/
+  /____/_/\_, /_//_/_/\_\
+        /___/ v0.6.1 on NodeMCU
 */
 
-// the last working code 06/05/2020 on board
+// the last working code 13/05/2020 on board
 // uploading to blynk.com maikinng it iot
+// adding all features..!
 
 #define BLYNK_PRINT Serial
 #include <ESP8266WiFi.h>
@@ -21,7 +28,7 @@ BlynkTimer timer;
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS 2 //Selecting the pin GPIO 02 [D4] for temprature sensor
 #define TEMPERATURE_PRECISION 9 // Lower resolution
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
@@ -32,8 +39,11 @@ Adafruit_SSD1306 oled(128, 64); // create our screen object setting resolution t
 
 WidgetLED led1(V2);
 WidgetLED led2(V5);
-const int eme = 12;
+const int eme = 12; //Selecting the pin GPIO 12 [D6] for emergency switch
+const int bot = 13; //Selecting the pin GPIO 13 [D7] for bottle
+const int hb = 0; //Selecting the pin ADC0 [A0] for Heart beat sensor
 int emestate = 0;
+bool botstate = LOW;
 int a = 0;
 int lasta = 0;
 int lastb = 0;
@@ -45,20 +55,29 @@ int BPM = 0;
 int value = 0;
 #define UpperThreshold 560
 #define LowerThreshold 530
+void wifi_connect_info();
+
 
 void setup() {
   Serial.begin(9600);
-  Blynk.begin(auth, ssid, pass);
   // Setup a function to be called every second
   //timer.setInterval(1000L, sendSensor);
-  Serial.println("AIT _ Health Monitoring Sysyem Logs");
+  Serial.println("--------------------------AIT_Health_Monitoring_Sysyem--------------------------");
+  Serial.println("                            _     ___  ___ ");
+  Serial.println("                           /__\    |    |  ");
+  Serial.println("                          /    \  _|_   |       2019 Project");
   delay(2000);
   pinMode(eme, INPUT);
+  pinMode(bot, INPUT);
   sensors.begin();
-
   oled.begin(SSD1306_SWITCHCAPVCC, OLED_Address);
   oled.clearDisplay();
+  oled.writeFillRect(0, 50, 128, 16, BLACK);
   oled.setTextSize(2);
+  oled.clearDisplay();
+
+  wifi_connect_info();
+  Blynk.begin(auth, ssid, pass);
   Serial.println("Entering loop....!");
   Serial.println("Function :emergency initialized");
   Serial.println("Function :temparature initialized");
@@ -72,21 +91,21 @@ void loop() {
   value = 0;
   emestate = digitalRead(eme);
   led1.off();
+  led2.off();
+  value = analogRead(hb);// Reading the value from temprature sensor
+  //Serial.print("value ");
+  //Serial.println(value);
+  bool lvl = level ();
+  int temp = temparature ();
+  ecg(value);
+  int BPM = bpm(value);
+  displai(BPM, temp, lvl);
+  upload(BPM, temp);
   while (emestate == LOW) {
     led1.on();
     emergency();
     emestate = digitalRead(eme);
   }
-  
-  int temp = temparature ();
-  value = analogRead(0);
-  //delay(200);
-  Serial.print("value ");
-  Serial.println(value);
-  ecg(value);
-  int BPM = bpm(value);
-  displai(BPM, temp);
-  upload(BPM, temp);
 }
 
 void emergency() {
@@ -97,7 +116,8 @@ void emergency() {
   delay(100);
   tone(14, 1000, 200);
   delay(100);
-  Serial.println("emg");
+  Serial.println("Emergency...!");
+  Serial.println("              ");
   oled.writeFillRect(0, 50, 128, 16, BLACK);
   oled.setCursor(0, 1);
   oled.print("EMERGENCY!");
@@ -106,10 +126,24 @@ void emergency() {
   int value = analogRead(0);
   delay(50);
   int BPM = bpm(value);
-  displai(BPM, temp);
-  String body = String("Emergency button pressed \r\nThe heart beat rate is:") + BPM + "\r\nThe Body temprature is:" + temp + "\r\nFor quick contact +91 82*******12";
+  bool lvl = level ();
+  displai(BPM, temp, lvl);
+  String body = String("Emergency button pressed \r\nThe heart beat rate is:") + BPM +
+                "\r\nThe Body temprature is:" + temp +
+                "\r\nThe Drip bottle status is:" + lvl +
+                "\r\nFor quick contact +91 82*******12";
   Serial.println(body);
-  Blynk.email("ullas6558@gmail.com", "Subject: Emergency..!", body);
+  Blynk.email("ullas6558@gmail.com", "Emergency..!", body);
+}
+
+bool level () {
+  botstate = digitalRead(bot);
+  if (botstate == LOW) {
+    return HIGH;
+  }
+  else {
+    return LOW;
+  }
 }
 
 int temparature () {
@@ -170,35 +204,70 @@ int bpm(int value) {
   return BPM;
 }
 
-void displai(int BPM, int temp) {
+void displai(int BPM, int temp, bool bottle) {
   //Serial.println("Function calling-displai");
   //Serial.println("...");
   oled.writeFillRect(0, 50, 128, 16, BLACK);
-  //oled.setCursor(62, 0);
-  //oled.print("EMR:");
   oled.setCursor(0, 30);
   oled.print("TMP:");
   oled.print((temp % 99));
   oled.setCursor(0, 51);
   oled.print("BPM:");
   oled.println(BPM);
-  oled.display();
-  Serial.print("TMP:");
+  Serial.print("   TMP:");
   Serial.print(temp);
   Serial.print("   BPM:");
   Serial.println(BPM);
+
+  if (bottle == HIGH) {
+    Serial.print("Bottle: Running");
+    oled.setCursor(80, 20);
+    oled.print("Bot:");
+    oled.setCursor(80, 40);
+    oled.println("Run");
+  }
+  else {
+    Serial.print("Bottle: Empty..!");
+    led2.on();
+    oled.setCursor(80, 20);
+    oled.print("Bot:");
+    oled.setCursor(80, 40);
+    oled.println("Empty");
+    tone(14, 93, 200);
+    delay(100);
+    String bod = String("Check out the drip bottle..!, seems to be empty or may be missplaced. Emercrncy to attend Patent Number 48\r\nStatus of all sersor...\r\nHeart Rate:") + BPM +
+                 "\r\nTemprature is:" + temp +
+                 "\r\nFor quick contact call @ +91 82*******12";
+    Serial.println(bod);
+    Blynk.email("ullas6558@gmail.com", "Drip Bottle Empty..!", bod);
+  }
+  oled.display();
 }
 
 void upload(int BPM, int temp) {
   Blynk.virtualWrite(V0, BPM);
   Blynk.virtualWrite(V1, temp);
-  // Blynk.virtualWrite(V3, ecg);
-
-  //  if (bot == 1) {
-  //    led2.on();
-  //  }
-  //  else {
-  //    led2.off();
-  //  }
+  //Blynk.virtualWrite(V5, lvl);
+  // Blynk.virtualWrite(V3, ecg)
   Blynk.run();
+}
+
+void wifi_connect_info() {
+  Serial.println("To Run the project we must connect to a network...!");
+  Serial.println("Connecting steps:");
+  Serial.println("1.Create a Hotspot");
+  Serial.println("2.Name/SSID :new");
+  Serial.println("3.Password :12345678");
+  Serial.println("4.Wait for the system to connect");
+  Serial.println("Network Status : OFF LINE MODE");
+  oled.setCursor(5, 1);
+  oled.print("H M S 2019");
+  oled.setCursor(0, 10);
+  oled.print("SSID:new");
+  oled.setCursor(0, 20);
+  oled.print("Password:");
+  oled.setCursor(0, 30);
+  oled.print("12345678");
+  delay(1000);
+  oled.display();
 }
