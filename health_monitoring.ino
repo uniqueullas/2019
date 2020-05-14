@@ -104,7 +104,7 @@ void loop() {
   while (emestate == LOW) {
     led1.on();
     emergency();
-    emestate = digitalRead(eme);
+    emestate = digitalRead(eme); //this line can be commented, results when the emergency button is pressed for once, it never comes back to the normal mode Controller should be reset again. 
   }
 }
 
